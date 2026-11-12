@@ -35,7 +35,7 @@ R_HUB = 180.0
 D_MAIN_BORE = 465.0       # Ø465H9
 D_RECESS, RECESS_DEPTH = 665.0, 6.0      # Ø665H11 глубина 6
 D_FLANGE_BORE, FLANGE_BORE_DEPTH = 860.0, 25.0  # Ø860H9 глубина 25
-D_LOWER_BORE = 150.0      # Ø150H7 (передняя стенка)
+D_LOWER_BORE = 260.0      # Ø260H9 (передняя стенка, см. вид сбоку)
 D_COVER_BORE = 140.0      # Ø140 (задняя стенка нижней части)
 
 # Отверстия: (кол-во, Ø окружности, Ø сверла, нач. угол от оси X, шаг, глубина)
@@ -44,7 +44,8 @@ HOLES_FRONT = [
     (8, 500.0, 18.0, 22.5, 45.0, T_FRONT),    # 8 отв. Ø18 (К-К)
     (6, 720.0, 49.0, 0.0, 60.0, T_FRONT),     # 6 отв. Ø49 / G1 1/4 (Л-Л)
 ]
-HOLES_LOWER_HUB = (8, 320.0, 14.0, 22.5, 45.0, 32.0)   # 8 отв. M16-7H, гл. 32 (В-В)
+# 8 отв. M16-7H на Ø320, гл. 32 (В-В); шаг неравномерный: нижняя пара разнесена на 160
+HOLES_LOWER_HUB = (320.0, 14.0, (22.5, 67.5, 112.5, 157.5, 202.5, 240.0, 300.0, 337.5), 32.0)
 HOLES_FLANGE = (20, 880.0, 8.5, 90.0 - 7.5, 18.0, 20.0)  # 20 отв. M10-7H на Ø880
 
 
@@ -139,13 +140,13 @@ def build(m):
     m.extrude("cut", T_FRONT, [[("circle", (0.0, 0.0), D_RECESS / 2)]], RECESS_DEPTH,
               reverse=True, name="Выточка Ø665H11")
     m.extrude("cut", 0.0, [[("circle", (0.0, -AXIS_DIST), D_LOWER_BORE / 2)]], T_HUB,
-              name="Расточка Ø150H7")
+              name="Расточка Ø260H9")
     for n, pcd, d, a0, step, depth in HOLES_FRONT:
         m.extrude("cut", 0.0, [[c] for c in circle_pattern(n, pcd, d, a0, step)], depth,
                   name=f"{n} отв. Ø{d:g} на Ø{pcd:g}")
-    n, pcd, d, a0, step, depth = HOLES_LOWER_HUB
-    m.extrude("cut", 0.0, [[c] for c in circle_pattern(n, pcd, d, a0, step, (0.0, -AXIS_DIST))],
-              depth, name="8 отв. M16 на Ø320")
+    pcd, d, angles, depth = HOLES_LOWER_HUB
+    holes = [[("circle", _pt((0.0, -AXIS_DIST), pcd / 2, math.radians(a)), d / 2)] for a in angles]
+    m.extrude("cut", 0.0, holes, depth, name="8 отв. M16 на Ø320")
 
     # 7. Задняя стенка нижней части
     m.extrude("cut", T_FRONT + L_LOWER, [[("circle", (0.0, -AXIS_DIST), D_COVER_BORE / 2)]],
