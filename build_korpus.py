@@ -181,6 +181,7 @@ _CONST_FALLBACK = {
     "o3d_baseExtrusion": 24, "o3d_bossExtrusion": 25, "o3d_cutExtrusion": 26,
     "dtNormal": 0, "dtReverse": 1, "etBlind": 0,
 }
+CUT_FLIP = True
 
 
 def _load_constants():
@@ -258,6 +259,10 @@ class Kompas:
         d = ent.GetDefinition()
         if op == "cut":
             d.cut = True
+            # В КОМПАС прямое направление выреза противоположно нормали эскиза
+            # (на v24 без инверсии полость прорезала переднюю стенку).
+            if CUT_FLIP:
+                reverse = not reverse
         d.directionType = k["dtReverse"] if reverse else k["dtNormal"]
         d.SetSideParam(not reverse, k["etBlind"], depth, 0, False)
         d.SetThinParam(False, 0, 0, 0)
@@ -279,7 +284,11 @@ def main():
     ap.add_argument("--output", default=os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                                      "Корпус_редуктора_00.000СБ.m3d"))
     ap.add_argument("--dry-run", action="store_true", help="проверить геометрию без КОМПАС")
+    ap.add_argument("--no-cut-flip", action="store_true",
+                    help="не инвертировать направление вырезов (если отверстия уходят наружу)")
     args = ap.parse_args()
+    global CUT_FLIP
+    CUT_FLIP = not args.no_cut_flip
 
     if args.dry_run:
         build(DryRun())
